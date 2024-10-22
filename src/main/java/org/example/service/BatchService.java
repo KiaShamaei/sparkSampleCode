@@ -11,6 +11,7 @@ import org.apache.spark.sql.expressions.Window;
 import org.apache.spark.sql.expressions.WindowSpec;
 import org.apache.spark.sql.functions;
 import org.example.data.Metric;
+import scala.Int;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -137,22 +138,18 @@ public class BatchService {
     private static List<ObjectNode> generateRecommendations(List<Metric> metrics) {
         // Group by app_id and country_code
         Map<String, List<Metric>> groupedMetrics = metrics.stream()
-                .collect(Collectors.groupingBy(m -> m.getAppId() + "_" + m.getCountryCode()));
+                .collect(Collectors.groupingBy(m -> m.getAppId() + "_" + m.getCountryCode()!=null ? m.getCountryCode() : "null"));
 
         List<ObjectNode> recommendationList = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
-
+        Map<Integer, Double> revenuePerImpression = new HashMap<>();
         for (Map.Entry<String, List<Metric>> entry : groupedMetrics.entrySet()) {
             String[] parts = entry.getKey().split("_");
-            int appId = Integer.parseInt(parts[0]);
-            String countryCode ;
-            if(parts.length > 1){
-                countryCode =parts[1];
-            }else{
-                countryCode = "*";
-            }
+            String appId = parts[0];
 
-            // Aggregate revenues and impressions by advertiser_id within each group
+            String countryCode=parts[1];
+
+            // Aggregate revenues and impressions by app_id within each group
             Map<Integer, Double> revenuePerImpressionMap = new HashMap<>();
             Map<Integer, Integer> impressionsMap = new HashMap<>();
 
@@ -162,7 +159,7 @@ public class BatchService {
             }
 
             // Calculate revenue per impression for each advertiser
-            Map<Integer, Double> revenuePerImpression = new HashMap<>();
+
             for (Integer advertiserId : revenuePerImpressionMap.keySet()) {
                 double revenue = revenuePerImpressionMap.get(advertiserId);
                 int impressions = impressionsMap.get(advertiserId);
@@ -170,7 +167,6 @@ public class BatchService {
                     revenuePerImpression.put(advertiserId, revenue / impressions);
                 }
             }
-
             // Find top 5 advertisers
             List<Integer> topAdvertisers = revenuePerImpression.entrySet().stream()
                     .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
@@ -187,6 +183,7 @@ public class BatchService {
 
             recommendationList.add(recommendation);
         }
+
 
         return recommendationList;
     }

@@ -13,9 +13,9 @@ public class App
         System.out.println( "Hello World!" );
         BatchService service = new BatchService();
         service.process("impressions.json","clicks.json" ,"output.json" );
-        service.processRecommendation("impressions.json"
-                , "clicks.json"
-                , "recommended_advertisers.json");
-//        service.processRecommendation("recommendation_output.json");
+//        service.processRecommendation("impressions.json"
+//                , "clicks.json"
+//                , "recommended_advertisers.json");
+        service.processRecommendation("recommendation_output.json");
     }
 }
